@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import subprocess
+from time import time, sleep, localtime
+
 from wiringpi2 import wiringPiSetupGpio, pinMode, digitalRead, digitalWrite, GPIO
 wiringPiSetupGpio()
 
@@ -110,17 +113,35 @@ class TM1637:
 
         return
 
-   
-if __name__ == "__main__":
-    TM = TM1637(CLK, DIO)
-    from time import time, sleep, localtime
-    while True:
+
+def show_ip_address(tm):
+    ipaddr = subprocess.check_output("hostname -I", shell=True, timeout=1).strip().split(b".")
+    for octet in ipaddr:
+        tm.set_segments([0, 0, 0, 0])
+        sleep(0.1)
+        tm.set_segments([tm.digit_to_segment[int(x) & 0xf] for x in octet])
+        sleep(0.9)
+
+
+def show_clock(tm):
         t = localtime()
         sleep(1 - time() % 1)
-        d0 = TM.digit_to_segment[t.tm_hour // 10] if t.tm_hour // 10 else 0
-        d1 = TM.digit_to_segment[t.tm_hour % 10]
-        d2 = TM.digit_to_segment[t.tm_min // 10]
-        d3 = TM.digit_to_segment[t.tm_min % 10]
-        TM.set_segments([d0, 0x80 + d1, d2, d3])
+        d0 = tm.digit_to_segment[t.tm_hour // 10] if t.tm_hour // 10 else 0
+        d1 = tm.digit_to_segment[t.tm_hour % 10]
+        d2 = tm.digit_to_segment[t.tm_min // 10]
+        d3 = tm.digit_to_segment[t.tm_min % 10]
+        tm.set_segments([d0, 0x80 + d1, d2, d3])
         sleep(.5)
-        TM.set_segments([d0, d1, d2, d3])
+        tm.set_segments([d0, d1, d2, d3])
+
+
+if __name__ == "__main__":
+    tm = TM1637(CLK, DIO)
+
+    show_ip_address(tm)
+
+    while True:
+        show_clock(tm)
+
+
+
