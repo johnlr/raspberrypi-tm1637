@@ -55,6 +55,7 @@ class TM1637:
         digitalWrite(self.dio, GPIO.LOW)
 
     def bit_delay(self):
+        sleep(0.001)
         return
    
     def set_segments(self, segments, pos=0):
